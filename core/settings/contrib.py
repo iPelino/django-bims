@@ -49,22 +49,17 @@ INSTALLED_APPS += (
     'bims.signals',
     'allauth',
     'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'allauth.socialaccount.providers.github',
-    'easyaudit',
     'rolepermissions',
     'rest_framework',
     'celery',
     'pipeline',
     'modelsdoc',
     'contactus',
-    'haystack',
     'django_prometheus',
     'crispy_forms',
     'sass',
+    'rangefilter',
 )
-
 # workaround to get flatpages picked up in installed apps.
 INSTALLED_APPS += (
     'django.contrib.flatpages',
@@ -76,13 +71,15 @@ try:
     TEMPLATES[0]['DIRS'] = [
         absolute_path('core', 'base_templates'),
         absolute_path('bims', 'templates'),
-        absolute_path('example', 'templates'),
+        absolute_path('sass', 'templates'),
     ] + TEMPLATES[0]['DIRS']
 
     TEMPLATES[0]['OPTIONS']['context_processors'] += [
         'bims.context_processor.add_recaptcha_key',
         'bims.context_processor.custom_navbar_url',
         'bims.context_processor.google_analytic_key',
+        'bims.context_processor.is_sass_enabled',
+        'bims.context_processor.bims_preferences',
         'bims.context_processor.application_name'
     ]
 except KeyError:
@@ -93,7 +90,7 @@ except KeyError:
                 # project level templates
                 absolute_path('core', 'base_templates'),
                 absolute_path('bims', 'templates'),
-                absolute_path('example', 'templates'),
+                absolute_path('sass', 'templates'),
             ],
             'APP_DIRS': True,
             'OPTIONS': {
@@ -127,16 +124,22 @@ STATICFILES_DIRS = [
     # Don't forget to use absolute paths, not relative paths.
     absolute_path('core', 'base_static'),
     absolute_path('bims', 'static'),
+    absolute_path('sass', 'static'),
 ] + STATICFILES_DIRS
 
-INSTALLED_APPS = ensure_unique_app_labels(INSTALLED_APPS)
-
 MIDDLEWARE_CLASSES += (
-    'easyaudit.middleware.easyaudit.EasyAuditMiddleware',
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'bims.middleware.VisitorTrackingMiddleware',
 )
 
+TESTING = sys.argv[1:2] == ['test']
+if not TESTING and not on_travis:
+    INSTALLED_APPS += (
+        'easyaudit',
+    )
+    MIDDLEWARE_CLASSES += (
+        'easyaudit.middleware.easyaudit.EasyAuditMiddleware',
+    )
 # for middleware in MIDDLEWARE_CLASSES:
 #     if middleware not in MIDDLEWARE:
 #         MIDDLEWARE += (middleware,)
@@ -161,10 +164,27 @@ SOCIALACCOUNT_PROVIDERS = {
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_EMAIL_REQUIRED = True
-# ACCOUNT_SIGNUP_FORM_CLASS = 'base.forms.SignupForm'
 ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
 LOGIN_REDIRECT_URL = "/"
 
+AUTH_WITH_EMAIL_ONLY = ast.literal_eval(os.environ.get(
+        'AUTH_WITH_EMAIL_ONLY', 'False'))
+
+if AUTH_WITH_EMAIL_ONLY:
+    ACCOUNT_USERNAME_REQUIRED = False
+    ACCOUNT_FORMS = {
+        'signup': 'bims.forms.CustomSignupForm',
+    }
+    ACCOUNT_AUTHENTICATION_METHOD = 'email'
+else:
+    INSTALLED_APPS += (
+        'allauth.socialaccount',
+        'allauth.socialaccount.providers.google',
+        'allauth.socialaccount.providers.github',
+    )
+
+
+INSTALLED_APPS = ensure_unique_app_labels(INSTALLED_APPS)
 # ROLEPERMISSIONS_MODULE = 'roles.settings.roles'
 
 IUCN_API_URL = 'http://apiv3.iucnredlist.org/api/v3'
@@ -183,14 +203,13 @@ MODELSDOC_INCLUDE_AUTO_CREATED = True
 
 # contact us email
 CONTACT_US_EMAIL = os.environ.get('CONTACT_US_EMAIL', '')
-
-ELASTIC_MIN_SCORE = 0
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', CONTACT_US_EMAIL)
 
 # site tracking stats settings
 TRACK_PAGEVIEWS = True
-TRACK_AJAX_REQUESTS = True
+TRACK_AJAX_REQUESTS = False
 TRACK_REFERER = True
-TRACK_IGNORE_STATUS_CODES = [403, 405, 410]
+TRACK_IGNORE_STATUS_CODES = [301, 303, 403, 404, 405, 410]
 
 DJANGO_EASY_AUDIT_UNREGISTERED_CLASSES_EXTRA = [
     'layers.Layer',
@@ -282,10 +301,10 @@ if ASYNC_SIGNALS_GEONODE and USE_GEOSERVER:
 # Set institutionID default value
 INSTITUTION_ID_DEFAULT = os.environ.get('INSTITUTION_ID_DEFAULT', 'bims')
 
-ACCOUNT_APPROVAL_REQUIRED = False
+ACCOUNT_APPROVAL_REQUIRED = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
 ACCOUNT_ADAPTER = 'bims.adapters.account_adapter.AccountAdapter'
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 OGC_SERVER['default']['DATASTORE'] = os.environ.get(
         'DEFAULT_BACKEND_DATASTORE', '')
@@ -294,4 +313,45 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS':
         'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100
+}
+
+SELENIUM_DRIVER = os.environ.get(
+    'SELENIUM_DRIVER',
+    'http://hub:4444/wd/hub')
+
+# Enable or disable SASS
+try:
+    SASS_ENABLED = ast.literal_eval(os.environ.get('SASS_ENABLED', 'False'))
+except ValueError:
+    SASS_ENABLED = False
+
+# Bims site preferences
+BIMS_PREFERENCES = {
+    'enable_module_filter': ast.literal_eval(
+        os.environ.get('ENABLE_MODULE_FILTER', 'False')
+    ),
+    'enable_catchment_filter': ast.literal_eval(
+        os.environ.get('ENABLE_CATCHMENT_FILTER', 'False')
+    ),
+    'enable_ecoregion_filter': ast.literal_eval(
+        os.environ.get('ENABLE_ECOREGION_FILTER', 'False')
+    ),
+    'enable_user_boundary_filter': ast.literal_eval(
+        os.environ.get('ENABLE_USER_BOUNDARY_FILTER', 'False')
+    ),
+    'enable_download_data_from_map': ast.literal_eval(
+        os.environ.get('ENABLE_DOWNLOAD_DATA_FROM_MAP', 'False')
+    ),
+    'geoserver_location_site_layer': os.environ.get(
+        'GEOSERVER_LOCATION_SITE_LAYER',
+        ''
+    ),
+    'default_location_site_cluster': os.environ.get(
+        'DEFAULT_LOCATION_SITE_CLUSTER',
+        'default_location_site_cluster'
+    ),
+    'empty_location_site_cluster': os.environ.get(
+        'EMPTY_LOCATION_SITE_CLUSTER',
+        'empty_location_site_cluster'
+    )
 }

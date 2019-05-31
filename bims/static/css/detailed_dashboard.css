@@ -12,16 +12,15 @@
 }
 
 .detailed-dashboard-title {
-    padding: 15px;
+    padding-left: 15px;
     font-size: 15pt;
     font-weight: bold;
-    text-align: center;
 }
 
 .loading-dashboard {
-    margin-top: 60px;
     text-align: center;
     border: 0;
+    z-index: 9;
 }
 
 .loading-dashboard img {
@@ -41,8 +40,8 @@
 }
 
 .dashboard-wrapper {
-    margin-top: 25px;
-    margin-bottom: 50px;
+    width: 100%;
+    margin: 15px;
 }
 
 .dashboard-table table {
@@ -61,10 +60,10 @@
 
 .btn-dashboard {
     border-radius: 0;
-    border: 2px solid black !important;
     position: fixed;
     top: 3px;
-    right: 3px;
+    right: 10px;
+    z-index: 99999;
 }
 
 .btn-element-download {
@@ -113,11 +112,10 @@
     text-align: center;
 }
 
-.open-detailed-view {
+#open-detailed-view {
     font-size: 10pt;
     text-transform: none;
-    margin-top: 10px;
-    margin-bottom: 2px;
+    width: -webkit-fill-available;
 }
 
 .download-as-csv {
@@ -146,4 +144,169 @@
     width: 100%;
     text-align: center;
     min-height: 100px;
+}
+
+.dashboard-wrapper .card {
+    margin-top: 0.5rem;
+}
+
+
+#fsdd-overview .col-12.sub-title {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#fsdd-overview .title_column {
+     font-weight: 700;
+}
+
+#fsdd-overview  .col-4 {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    padding-left: 0.5rem;
+    font-size: 12px;
+}
+
+#fsdd-overview  .col-8 {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    padding-left: 0.5rem;
+    font-size: 12px;
+}
+
+#fish-ssdd-occurrence-data .col-6.sub-title {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+#fish-ssdd-occurrence-data .title-column {
+     font-weight: 700;
+    overflow-x: hidden;
+}
+
+#fish-ssdd-occurrence-data .col-4 {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    padding-left: 0.5rem;
+    font-size: 12px;
+    color: #4a4a4a;
+}
+
+#fish-ssdd-occurrence-data .col-2 {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    padding-left: 0.5rem;
+    font-size: 12px;
+    color: #4a4a4a;
+    overflow-x: hidden;
+}
+
+.center-self {
+    align-self: center;
+    height: 100%;
+    align-items: center;
+    display: inline-flex;
+    overflow-x:auto;
+
+}
+
+.center-self::-webkit-scrollbar {
+    display: none;
+}
+
+.center-self::-webkit-scrollbar {
+   height: 0;
+}
+
+.fish-ssdd-titles {
+    text-align: center;
+    font-size: 12px;
+    padding: 0.5rem;
+}
+
+.fish-ssdd-legends {
+    font-style: italic;
+    font-size: 9px;
+    letter-spacing: 0.2px;
+    color: #4a4a4a;
+    padding-bottom: 0.5rem;
+}
+
+.fish-ssdd-legends .col-3 {
+    padding-left:9%;
+}
+
+.dashboard-wrapper .card {
+    margin-top: 0.5rem;
+}
+
+.dashboard-wrapper .card .card-header   {
+    padding: 0.25rem;
+    padding-left: 1rem;
+    line-height: 1.25rem;
+}
+
+.dashboard-wrapper .card .card-header-title {
+    height: auto;
+}
+
+.dashboard-wrapper .card {
+    margin-top: 0.5rem;
+}
+
+.records-area-table .col-4.sub-title {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.records-area-table .title_column {
+     font-weight: 700;
+}
+
+.records-area-table  .col-4 {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    padding-left: 0.5rem;
+    font-size: 12px;
+}
+
+.records-area-table  .col-4 {
+    padding: 0.25rem;
+    border: 1px solid #d3d4d1;
+    padding-left: 0.5rem;
+    font-size: 12px;
+}
+
+table#filter-history-table {
+    width: 100%;
+}
+
+#filter-history-table tr {
+    border-bottom: 1px solid #ccc;
+}
+
+.common-name-title {
+    font-weight: normal !important;
+    font-size: 14pt;
+}
+
+.site-detailed-table thead {
+    font-size: 8pt;
+}
+
+.site-detailed-table tbody {
+    font-size: 8pt;
+}
+
+.dashboard-header {
+    margin-top: 20px;
+    margin-left: 30px;
+    margin-right: 30px;
+    border-bottom: 3px solid #1b900d;
 }

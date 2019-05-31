@@ -1,0 +1,107 @@
+body {
+    font-family: "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    line-height: 1.2;
+    box-sizing: border-box; //to account for the border on top
+    -o-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    height: 100%;
+    position: relative;
+}
+
+.body-form {
+    padding-top: 100px;
+    padding-bottom: 70px;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.body-form input, .body-form select {
+    height: 30px !important;
+}
+
+td.taxon-name {
+    vertical-align: middle !important;
+    min-width: 300px;
+    max-width: 300px;
+    font-size: 11pt;
+}
+
+td.taxon-group {
+    vertical-align: middle !important;
+    min-width: 150px;
+    max-width: 150px;
+    font-size: 11pt;
+}
+
+.bold_bottom_border {
+    border-top: 2px solid black;
+}
+
+td.sheet-row {
+    vertical-align: middle;
+}
+
+td.sampled-name {
+    vertical-align: middle !important;
+    max-width: 100px;
+    font-size: 11pt;
+}
+
+.submit-wrapper {
+    text-align: center;
+}
+
+.submit-wrapper .btn {
+    text-transform: capitalize;
+    border-radius: 5px;
+    padding-left: 50px;
+    padding-right: 50px;
+    padding-bottom: 30px;
+    font-weight: normal;
+}
+
+.no-line td {
+    border: 0 !important;
+}
+
+.input-label {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    width: 100%;
+    border-top: 1px solid #dee2e6;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: bold;
+}
+
+.fbis-sass-logo img {
+    padding-top: 50px;
+}
+
+.sass-radio-label {
+    display: inline-flex;
+    border-style: none;
+    padding: 0;
+    text-align: center;
+}
+
+.site-code {
+    margin-top: -20px;
+    font-size: 14pt;
+    font-weight: bold;
+}
+
+.sass-score {
+    float: right;
+    padding-right: 10px;
+}
+
+.sass-score-row {
+    background-color: rgba(29, 188, 13, 0.08);
+}
+
+.sass-score-row .taxon-name {
+    font-size: 13pt;
+}

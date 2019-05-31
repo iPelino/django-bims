@@ -8,9 +8,10 @@ define([
     'views/search_panel',
     'jquery',
     'views/filter_panel/reference_category',
-    'views/filter_panel/spatial_filter'
+    'views/filter_panel/spatial_filter',
+    'views/filter_panel/source_collection'
 ], function (Backbone, _, Shared, ol, NoUiSlider, SearchResultCollection, SearchPanelView, $,
-             ReferenceCategoryView, SpatialFilterView) {
+             ReferenceCategoryView, SpatialFilterView, SourceCollectionView) {
 
     return Backbone.View.extend({
         template: _.template($('#map-search-container').html()),
@@ -27,7 +28,9 @@ define([
         initialSelectedStudyReference: [],
         initialSelectedCollectors: [],
         initialSelectedReferenceCategory: [],
+        initialSelectedSourceCollection: [],
         initialSelectedEndemic: [],
+        initialSelectedModules: [],
         initialYearFrom: null,
         initialYearTo: null,
         events: {
@@ -53,6 +56,7 @@ define([
             Shared.Dispatcher.on('search:clearSearch', this.clearSearch, this);
             Shared.Dispatcher.on('search:checkSearchCollection', this.checkSearch, this);
             Shared.Dispatcher.on('filters:updateFilters', this.filtersUpdated, this);
+            Shared.Dispatcher.on('search:showMoreSites', this.showMoreSites, this);
         },
         render: function () {
             var self = this;
@@ -62,17 +66,19 @@ define([
             this.searchInput.autocomplete({
                 autoFocus: true,
                 source: function (request, response) {
+                    var sourceCollection = filterParameters['sourceCollection'];
                     $.ajax({
                         url: "/autocomplete/",
-                        data: {q: request.term},
+                        data: {q: request.term, source_collection: sourceCollection},
                         dataType: "json",
                         success: function (requestResponse) {
                             var responseData = [];
                             if (requestResponse.hasOwnProperty('results')) {
                                 $.each(requestResponse['results'], function (index, value) {
                                     responseData.push({
-                                        'value': value['name'],
-                                        'label': value['name'],
+                                        'value': value['suggested_name'],
+                                        'label': value['suggested_name'],
+                                        'source': value['source'],
                                         'id': value['id']
                                     })
                                 })
@@ -85,7 +91,11 @@ define([
                     var itemValue = ui['item']['value'];
                     self.search(itemValue);
                 }
-            });
+            }).autocomplete("instance")._renderItem = function( ul, item ) {
+                return $( "<li>" )
+                    .append( "<div class='autocomplete-item'><span class='autocomplete-label'>" + item.label + "</span><hr style=\"height:0; visibility:hidden;margin-top: -5px;margin-bottom: -5px\" /><span class='autocomplete-source'>" + item.source + "</span></div>" )
+                    .appendTo( ul );
+            };
             this.searchBox.hide();
             this.$el.append(this.searchPanel.render().$el);
             this.referenceCategoryView = new ReferenceCategoryView({parent: this});
@@ -94,20 +104,49 @@ define([
             this.spatialFilterView = new SpatialFilterView();
             this.$el.find('.spatial-filter-wrapper').append(this.spatialFilterView.render().$el);
 
+            this.sourceCollectionView = new SourceCollectionView({parent: this});
+            this.$el.find('.source-collection-wrapper').append(this.sourceCollectionView.render().$el);
+
             var nativeOriginDropdown = self.$el.find('.native-origin-dropdown');
+            var moduleListContainer = self.$el.find('.module-filters');
+
+            $.ajax({
+                type: 'GET',
+                url: '/api/module-list/',
+                dataType: 'json',
+                success: function (data) {
+                    for (var i = 0; i < data.length; i++) {
+                        let selected = '';
+                        if (data[i]['name'].toLowerCase() === 'fish') {
+                            Shared.FishModuleID = data[i]['id'];
+                        }
+                        if ($.inArray(data[i]['id'].toString(), self.initialSelectedModules) > -1) {
+                            selected = 'selected';
+                        }
+                        let $moduleSpecies = $(
+                            '<div data-id="' + data[i]['id'] + '" class="col-lg-4 module-species ' + selected + '" title="' + data[i]['name'] + '">' +
+                            '<img src="/uploaded/' + data[i]['logo'] + '"></div>'
+                        );
+                        moduleListContainer.append($moduleSpecies);
+                        $moduleSpecies.click(self.onModuleSpeciesClicked);
+                    }
+                }
+            });
+
             $.ajax({
                 type: 'GET',
                 url: '/api/endemism-list/',
                 dataType: 'json',
                 success: function (data) {
+                    Shared.EndemismList = data;
                     for (var i = 0; i < data.length; i++) {
                         var checked = '';
                         if ($.inArray(data[i], self.initialSelectedEndemic) > -1) {
                             checked = 'checked';
                         }
                         nativeOriginDropdown.append(
-                            '<div class="dropdown-item endemic-dropdown-item" data-endemic-value="' + data[i] + '">' +
-                            ' <input class="endemic-checkbox" name="endemic-value" type="checkbox" value="' + data[i] + '" ' + checked + '> ' + data[i] + '</div>'
+                            '<li class="dropdown-item endemic-dropdown-item" data-endemic-value="' + data[i] + '">' +
+                            ' <input class="endemic-checkbox" name="endemic-value" type="checkbox" value="' + data[i] + '" ' + checked + '> ' + data[i] + '</li>'
                         )
                     }
                     self.filtersReady['endemism'] = true;
@@ -119,16 +158,21 @@ define([
                 url: listCollectorAPIUrl,
                 dataType: 'json',
                 success: function (data) {
+                    var selected;
                     for (var i = 0; i < data.length; i++) {
-                        var checked = '';
                         if ($.inArray(data[i], self.initialSelectedCollectors) > -1) {
-                            checked = 'checked';
+                            selected = 'selected';
+                        } else {
+                            selected = '';
                         }
+
                         if (data[i]) {
-                            $('#filter-collectors').append('<input type="checkbox" name="collector-value" value="' + data[i] + '" ' + checked + '> ' + data[i] + '<br>');
+                            $('#filter-collectors').append(`
+                                <option value="${data[i]}" ${selected}>${data[i]}</option>`);
                         }
-                        self.filtersReady['collector'] = true;
                     }
+                    self.filtersReady['collector'] = true;
+                    $('#filter-collectors').chosen({});
                 }
             });
 
@@ -140,19 +184,21 @@ define([
                     if (data.length === 0) {
                         $('.study-reference-wrapper').hide();
                     } else {
+                        var selected;
                         for (var i = 0; i < data.length; i++) {
-                            var checked = '';
                             if ($.inArray(data[i]['reference'], self.initialSelectedStudyReference) > -1) {
-                                checked = 'checked';
+                                selected = 'selected';
+                            } else {
+                                selected = '';
                             }
                             if (data[i]) {
-                                $('#filter-study-reference').append('<input type="checkbox" ' +
-                                    'name="reference-value" ' +
-                                    'value="' + data[i]['reference'] + '" ' + checked + '> ' + data[i]['reference'] + '<br>');
+                                $('#filter-study-reference').append(`
+                                    <option value="${data[i]['reference']}" ${selected}>${data[i]['reference']}</option>`);
                             }
                         }
-                        self.filtersReady['study-reference'] = true;
                     }
+                    self.filtersReady['study-reference'] = true;
+                    $('#filter-study-reference').chosen({});
                 }
             });
 
@@ -200,7 +246,16 @@ define([
         clearSelectedConservationStatus: function () {
             return this.$el.find("#conservation-status").val("").trigger('chosen:updated');
         },
+        highlightPanel: function (identifier, state) {
+            let panelTitle = $(identifier).prev().find('.subtitle');
+            if (state) {
+                panelTitle.addClass('filter-panel-selected');
+            } else {
+                panelTitle.removeClass('filter-panel-selected');
+            }
+        },
         search: function (searchValue) {
+            $('#filter-validation-error').hide();
             Shared.Dispatcher.trigger('siteDetail:updateCurrentSpeciesSearchResult', []);
             if ($('#search-error-text').is(":visible")) {
                 return;
@@ -215,16 +270,29 @@ define([
             var referenceCategory = self.referenceCategoryView.getSelected();
             if (referenceCategory.length > 0) {
                 referenceCategory = JSON.stringify(referenceCategory);
+                self.referenceCategoryView.highlight(true);
             } else {
                 referenceCategory = '';
+                self.referenceCategoryView.highlight(false);
             }
+            filterParameters['referenceCategory'] = referenceCategory;
 
-            var collectorValue = [];
-            $('input[name=collector-value]:checked').each(function () {
-                collectorValue.push($(this).val())
-            });
+            // source collection
+            var sourceCollection = self.sourceCollectionView.getSelected();
+            if (sourceCollection.length > 0) {
+                sourceCollection = JSON.stringify(sourceCollection);
+                self.sourceCollectionView.highlight(true);
+            } else {
+                sourceCollection = '';
+                self.sourceCollectionView.highlight(false);
+            }
+            filterParameters['sourceCollection'] = sourceCollection;
+
+            // Collector filter
+            var collectorValue = $("#filter-collectors").val();
+            self.highlightPanel('.filter-collectors-row', collectorValue.length > 0);
             if (collectorValue.length === 0) {
-                collectorValue = ''
+                collectorValue = '';
             } else {
                 var encodedCollectorValue = [];
                 $.each(collectorValue, function (index, value) {
@@ -234,12 +302,11 @@ define([
                     collectorValue)
                 );
             }
+            filterParameters['collector'] = collectorValue;
 
-            // reference
-            var referenceValue = [];
-            $('input[name=reference-value]:checked').each(function () {
-                referenceValue.push($(this).val())
-            });
+            // reference filter
+            var referenceValue = $("#filter-study-reference").val();
+            self.highlightPanel('.filter-study-reference-row', referenceValue.length > 0);
             if (referenceValue.length === 0) {
                 referenceValue = ''
             } else {
@@ -251,31 +318,42 @@ define([
                     referenceValue)
                 );
             }
+            filterParameters['reference'] = referenceValue;
 
+            // Category filter
             var categoryValue = [];
             $('input[name=category-value]:checked').each(function () {
                 categoryValue.push($(this).val())
             });
             if (categoryValue.length === 0) {
-                categoryValue = ''
+                categoryValue = '';
             } else {
-                categoryValue = JSON.stringify(categoryValue)
+                categoryValue = JSON.stringify(categoryValue);
             }
+            filterParameters['category'] = categoryValue;
 
+            // Endemic filter
             var endemicValue = [];
             $('input[name=endemic-value]:checked').each(function () {
                 endemicValue.push($(this).val())
             });
             if (endemicValue.length === 0) {
-                endemicValue = ''
+                endemicValue = '';
             } else {
-                endemicValue = JSON.stringify(endemicValue)
+                endemicValue = JSON.stringify(endemicValue);
             }
+            filterParameters['endemic'] = endemicValue;
+            self.highlightPanel('#origin-filter-wrapper', endemicValue.length > 0 || categoryValue.length > 0);
 
-            var conservationStatusValue = this.getSelectedConservationStatus();
+            // Conservation status filter
+            filterParameters['conservationStatus'] = this.getSelectedConservationStatus();
+            self.highlightPanel('.conservation-status-row', filterParameters['conservationStatus'] !== '[]');
 
+            // Boundary filter
             var boundaryValue = this.spatialFilterView.selectedPoliticalRegions;
+            filterParameters['boundary'] = boundaryValue.length === 0 ? '' : JSON.stringify(boundaryValue);
 
+            // User boundary filter
             var userBoundarySelected = Shared.UserBoundarySelected;
             if (userBoundarySelected.length === 0 && boundaryValue.length === 0) {
                 Shared.Dispatcher.trigger('map:boundaryEnabled', false);
@@ -283,28 +361,38 @@ define([
             } else {
                 Shared.Dispatcher.trigger('map:boundaryEnabled', true);
             }
+            filterParameters['userBoundary'] = userBoundarySelected.length === 0 ? '' : JSON.stringify(userBoundarySelected);
 
             if (boundaryValue.length > 0) {
                 Shared.Dispatcher.trigger('catchmentArea:show-administrative', boundaryValue);
             }
 
-            var riverCatchments = this.spatialFilterView.selectedRiverCatchments;
+            // Spatial filter
+            var spatialFilters = this.spatialFilterView.selectedSpatialFilters;
+            filterParameters['spatialFilter'] = spatialFilters.length === 0 ? '' : JSON.stringify(spatialFilters);
+            this.spatialFilterView.highlight(spatialFilters.length !== 0);
 
-            var parameters = {
-                'search': searchValue,
-                'collector': collectorValue,
-                'category': categoryValue,
-                'boundary': boundaryValue.length === 0 ? '' : JSON.stringify(boundaryValue),
-                'userBoundary': userBoundarySelected.length === 0 ? '' : JSON.stringify(userBoundarySelected),
-                'yearFrom': '',
-                'yearTo': '',
-                'months': '',
-                'reference': referenceValue,
-                'referenceCategory': referenceCategory,
-                'endemic': endemicValue,
-                'conservationStatus': conservationStatusValue,
-                'riverCatchment': riverCatchments.length === 0 ? '' : JSON.stringify(riverCatchments)
-            };
+            // Validation filter
+            var validationFilter = [];
+            var validated = true;
+            $('[name=filter-validation]:checked').each(function () {
+                validationFilter.push($(this).attr('value'));
+            });
+            if (validationFilter.length > 0) {
+                validated = JSON.stringify(validationFilter);
+                self.highlightPanel('.validation-filter-row', true);
+            } else if (validationFilter.length === 0) {
+                $('#filter-validation-error').show();
+                self.highlightPanel('.validation-filter-row', false);
+                return;
+            }
+            filterParameters['validated'] = validated;
+
+            self.highlightPanel('.module-filters', filterParameters['modules'] !== '');
+
+            // Search value
+            filterParameters['search'] = searchValue;
+
             var yearFrom = $('#year-from').html();
             var yearTo = $('#year-to').html();
             var monthSelected = [];
@@ -313,32 +401,38 @@ define([
                 $('#month-selector').find('input:checkbox:checked').each(function () {
                     monthSelected.push($(this).val());
                 });
-                parameters['yearFrom'] = yearFrom;
-                parameters['yearTo'] = yearTo;
-                parameters['months'] = monthSelected.join(',');
+                filterParameters['yearFrom'] = yearFrom;
+                filterParameters['yearTo'] = yearTo;
+                filterParameters['months'] = monthSelected.join(',');
+                self.highlightPanel('.temporal-scale-row', true);
+            } else {
+                self.highlightPanel('.temporal-scale-row', false);
             }
             Shared.Dispatcher.trigger('map:closeHighlight');
-            Shared.Dispatcher.trigger(Shared.EVENTS.SEARCH.HIT, parameters);
+            Shared.Dispatcher.trigger(Shared.EVENTS.SEARCH.HIT, filterParameters);
             Shared.Dispatcher.trigger('sidePanel:closeSidePanel');
-            if (!parameters['search']
-                && !parameters['collector']
-                && !parameters['category']
-                && !parameters['yearFrom']
-                && !parameters['yearTo']
-                && !parameters['userBoundary']
-                && !parameters['referenceCategory']
-                && !parameters['reference']
-                && !parameters['endemic']
-                && !parameters['conservationStatus']
-                && !parameters['riverCatchment']
-                && !parameters['boundary']) {
+            if (!filterParameters['search']
+                && !filterParameters['collector']
+                && !filterParameters['validated']
+                && !filterParameters['category']
+                && !filterParameters['yearFrom']
+                && !filterParameters['yearTo']
+                && !filterParameters['userBoundary']
+                && !filterParameters['referenceCategory']
+                && !filterParameters['reference']
+                && !filterParameters['endemic']
+                && !filterParameters['modules']
+                && !filterParameters['conservationStatus']
+                && !filterParameters['spatialFilter']
+                && !filterParameters['sourceCollection']
+                && !filterParameters['boundary']) {
                 Shared.Dispatcher.trigger('cluster:updateAdministrative', '');
                 Shared.Router.clearSearch();
                 return false
             }
             this.searchResultCollection.search(
                 this.searchPanel,
-                parameters,
+                filterParameters,
                 self.shouldUpdateUrl
             );
 
@@ -347,18 +441,18 @@ define([
             }
         },
         searchClick: function () {
-            if (Shared.CurrentState.FETCH_CLUSTERS) {
-                return true;
-            }
+            // if (Shared.CurrentState.FETCH_CLUSTERS) {
+            //     return true;
+            // }
             Shared.Dispatcher.trigger('map:clearAllLayers');
             var searchValue = $('#search').val();
             this.search(searchValue);
         },
         searchEnter: function (e) {
             if (e.which === 13) {
-                if (Shared.CurrentState.FETCH_CLUSTERS) {
-                    return true;
-                }
+                // if (Shared.CurrentState.FETCH_CLUSTERS) {
+                //     return true;
+                // }
                 var searchValue = $('#search').val();
                 this.search(searchValue);
             }
@@ -366,11 +460,15 @@ define([
         clearSearch: function () {
             Shared.CurrentState.SEARCH = false;
             Shared.Router.clearSearch();
+            Shared.Router.initializeParameters();
+            this.clearClickedModuleSpecies();
             this.searchInput.val('');
             $('.clear-filter').click();
             $('.map-search-result').hide();
             this.searchPanel.clearSidePanel();
             this.clearClickedOriginButton();
+            $('#filter-validation-validated').prop('checked', true);
+            $('#filter-validation-error').hide();
 
             Shared.Dispatcher.trigger('politicalRegion:clear');
 
@@ -379,8 +477,10 @@ define([
             Shared.Dispatcher.trigger('cluster:updateAdministrative', '');
             Shared.Dispatcher.trigger('clusterBiological:clearClusters');
 
-            Shared.Dispatcher.trigger('map:clearAllLayers');
+            Shared.Dispatcher.trigger('map:resetSitesLayer');
             Shared.Dispatcher.trigger('map:refetchRecords');
+            $('.subtitle').removeClass('filter-panel-selected');
+            Shared.Dispatcher.trigger('map:zoomToDefault');
         },
         datePickerToDate: function (element) {
             if ($(element).val()) {
@@ -426,6 +526,7 @@ define([
         clearFilter: function (e) {
             var target = $(e.target);
             target.closest('.row').find('input:checkbox:checked').prop('checked', false);
+            target.closest('.row').find('select').val('').trigger("chosen:updated");
             if (target.closest('.row').find('#year-from').length > 0) {
                 this.yearSlider.set([this.startYear, this.endYear]);
                 target.closest('.row').find('#year-from').html(this.startYear);
@@ -560,6 +661,12 @@ define([
                 self.initialSelectedReferenceCategory = JSON.parse(allFilters['referenceCategory']);
             }
 
+            // Source collection
+            self.initialSelectedSourceCollection = [];
+            if (allFilters.hasOwnProperty('sourceCollection')) {
+                self.initialSelectedSourceCollection = JSON.parse(allFilters['sourceCollection']);
+            }
+
             // Date
             if (allFilters.hasOwnProperty('yearFrom')) {
                 self.initialYearFrom = allFilters['yearFrom'];
@@ -591,15 +698,51 @@ define([
             }
 
             // River catchment
-            if (allFilters.hasOwnProperty('riverCatchment')) {
-                this.spatialFilterView.selectedRiverCatchments = JSON.parse(allFilters['riverCatchment']);
+            if (allFilters.hasOwnProperty('spatialFilter')) {
+                this.spatialFilterView.selectedSpatialFilters = JSON.parse(allFilters['spatialFilter']);
             }
 
             // Boundary
             if (allFilters.hasOwnProperty('boundary')) {
                 this.spatialFilterView.selectedPoliticalRegions = JSON.parse(allFilters['boundary']);
             }
+
+            // Species module
+            if (allFilters.hasOwnProperty('modules')) {
+                filterParameters['modules'] = allFilters['modules'];
+                self.initialSelectedModules = allFilters['modules'].split(',');
+            }
         },
+        showMoreSites: function () {
+            this.searchResultCollection.fetchMoreSites();
+        },
+        onModuleSpeciesClicked: function (e) {
+            let $element = $(e.currentTarget);
+            let id = $element.data('id');
+            let isSelected = $element.hasClass('selected');
+            let modulesParameter = filterParameters['modules'].split(',');
+            modulesParameter = modulesParameter.filter(n => n);
+            if (modulesParameter.length > 0) {
+                for (let i = 0; i < modulesParameter.length; i++) {
+                    if (parseInt(modulesParameter[i]) === id) {
+                        modulesParameter.splice(i, 1);
+                    }
+                }
+            }
+            if (isSelected) {
+                $element.removeClass('selected');
+            } else {
+                $element.addClass('selected');
+                modulesParameter.push(id);
+            }
+            filterParameters['modules'] = modulesParameter.join();
+        },
+        clearClickedModuleSpecies: function () {
+            let $moduleContainer = $('.module-filters');
+            $.each($moduleContainer.children(), function (index, element) {
+                $(element).removeClass('selected');
+            });
+        }
     })
 
 });

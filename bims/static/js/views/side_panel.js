@@ -6,9 +6,14 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi', 'jquery', 'views/right_p
         returnButton: null,
         validationMode: false,
         siteDetailData: null,
+        apiParameters: _.template(Shared.SearchURLParametersTemplate),
         events: {
             'click .close-panel': 'closeSidePanel',
-            'click .open-detailed-site-button' : 'openDetailedSiteButton'
+            'click .open-detailed-site-button' : 'openDetailedSiteButton',
+            'click .open-fish-detailed-site-button' : 'openFishDetailedSiteButton',
+            'click #rp-view-fish-form': 'openFishPanel',
+            'click #rp-add-sass': 'addSassPanel',
+            'click #rp-view-sass': 'viewSassPanel'
         },
         initialize: function () {
             // Events
@@ -75,7 +80,7 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi', 'jquery', 'views/right_p
             if (typeof properties !== 'undefined') {
                 this.clearSidePanel();
                 this.$el.find('.panel-loading').show();
-                this.updateSidePanelTitle('<i class="fa fa-map-marker"></i> ' + properties['name'] + '</span>');
+                this.updateSidePanelTitle('<i class="fa fa-map-marker"></i>Overview</span>');
                 if (properties.hasOwnProperty('location_type')) {
                     this.fillSidePanel(properties['location_type']);
                 }
@@ -100,7 +105,7 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi', 'jquery', 'views/right_p
         updateSidePanelTitle: function (title) {
             var $rightPanelTitle = this.$el.find('.right-panel-title');
             $rightPanelTitle.html(title);
-            $('.side-panel-info').css("padding-top", $('.right-panel-header').outerHeight());
+            $('.side-panel-info').css("padding-top", '3rem');
         },
         closeSidePanelAnimation: function () {
             var self = this;
@@ -162,6 +167,21 @@ define(['shared', 'backbone', 'underscore', 'jqueryUi', 'jquery', 'views/right_p
             if (this.siteDetailData) {
                 Shared.Dispatcher.trigger('map:showSiteDetailedDashboard', this.siteDetailData);
             }
+        },
+        openFishDetailedSiteButton: function () {
+            filterParameters['modules'] = Shared.FishModuleID;
+            if (this.siteDetailData) {
+                Shared.Dispatcher.trigger('map:showSiteDetailedDashboard', this.siteDetailData);
+            }
+        },
+        openFishPanel: function () {
+            window.location.href = "/fish-form/?siteId=" + filterParameters['siteId'];
+        },
+        addSassPanel: function () {
+            window.location.href = "/sass/" + filterParameters['siteId'];
+        },
+        viewSassPanel: function () {
+            window.location.href = "/sass/dashboard/" + filterParameters['siteId'] + '/' + this.apiParameters(filterParameters);
         }
     })
 });

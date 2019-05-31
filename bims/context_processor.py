@@ -2,6 +2,7 @@
 """
 Our custom context processors
 """
+from django.conf import settings
 from bims.utils.get_key import get_key
 
 
@@ -31,6 +32,22 @@ def application_name(request):
     if not name:
         name = 'Django BIMS'
     return {'APPLICATION_NAME': name}
+
+
+def is_sass_enabled(request):
+    """
+    Check if sass enabled
+    """
+    return {'is_sass_enabled': settings.SASS_ENABLED}
+
+
+def bims_preferences(request):
+    """
+    For all bims preferences
+    """
+    return {
+        'bims_preferences': settings.BIMS_PREFERENCES
+    }
 
 
 def google_analytic_key(request):

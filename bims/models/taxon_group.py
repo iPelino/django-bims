@@ -22,7 +22,24 @@ class TaxonGroup(models.Model):
         blank=True,
     )
 
-    taxonomies = models.ManyToManyField(Taxonomy)
+    logo = models.ImageField(
+        upload_to='module_logo',
+        null=True,
+        blank=True
+    )
+
+    taxonomies = models.ManyToManyField(
+        Taxonomy,
+        null=True,
+        blank=True
+    )
+
+    source_collection = models.CharField(
+        help_text='Additional filter for search collections',
+        max_length=200,
+        null=True,
+        blank=True
+    )
 
     def __unicode__(self):
         return self.name

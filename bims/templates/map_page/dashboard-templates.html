@@ -1,83 +1,193 @@
 <script type="text/html" id="taxon-detail-dashboard-template">
-    <div class="loading-dashboard">
-        <img src="/static/img/small-loading.svg" width="250"
-             alt="Loading view">
-        <div class="loading-dashboard-subtitle">
-            Loading...
-        </div>
-    </div>
-    <div class="detailed-dashboard-title">&nbsp;</div>
-    <button class="btn btn-primary btn-dashboard close-dashboard"
-            style="float: right"><i class="fa fa-times pull-right"></i>
-    </button>
-    <div class="container dashboard-wrapper">
-        <div class="container row">
-            <div class="col-lg-4">
-                <h5 class="dd-title" style="float: left">Distribution</h5>
-                <button id="export-taxasite-map" style="float: right"
-                        class="btn btn-default btn-element-download"><i
-                        class="fa fa-download"></i></button>
-                <div id="taxasite-map" class="map"
-                     style="height: 300px; width: 100%; border: 1px solid black"></div>
-                <h5 class="dd-title" style="margin-top: 15px">Overview</h5>
-                <div class="overview-taxa-table dashboard-table"
-                     style="margin-top: 10px; margin-bottom: 10px"></div>
-                <h5 class="dd-title">Names & Taxonomy</h5>
-                <div class="overview-name-taxonomy-table dashboard-table"
-                     style="margin-top: 10px; margin-bottom: 10px"></div>
+    <div id="detailed-site-dashboard-wrapper" style="padding: 1rem;">
+        <div class="loading-dashboard">
+            <img src="/static/img/small-loading.svg" width="250"
+                 alt="Loading view">
+            <div class="loading-dashboard-subtitle">
+                Loading...
             </div>
-            <div class="col-lg-8 dashboard-graph-wrapper">
-                <div class="row">
-                    <div class="col-lg-6">
-                        <h5 class="dd-title">Records over time</h5>
-                        <div class="dashboard-table records-table"></div>
+        </div>
+        <h2 class="dashboard-header" style="margin-left: 15px; margin-right: 15px">
+            Taxa Dashboard
+        </h2>
+        <div class="detailed-dashboard-title">&nbsp;</div>
+        <button class="btn btn-primary btn-dashboard close-dashboard"
+                style="float: right"><i class="fa fa-times pull-right"></i>
+        </button>
+        <div class="container dashboard-wrapper">
+            <div class="row">
+                <div class="col-lg-4">
+                    {# Distribution #}
+                    <div class="row">
+                        <div class="col-lg-12" id="fsdd-distribution">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Distribution
+                                    </div>
+                                    <button id="export-taxasite-map"
+                                            class="btn btn-default pull-right">
+                                        <i
+                                                class="fa fa-download"></i>
+                                    </button>
+                                </div>
+
+                                <div class="card-body locationsite-map-wrapper">
+                                    <div id="taxasite-map"
+                                         class="map"
+                                         style="height: 300px; width: 100%;">
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-lg-6">
-                        <h5 class="dd-title">Records per area</h5>
-                        <div class="dashboard-table records-area-table"></div>
+                    {# Overview #}
+                    <div class="row">
+                        <div class="col-lg-12" id="fsdd-overview">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Overview
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="overview-taxa-table dashboard-table">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {# Names and Taxonomy #}
+                    <div class="row">
+                        <div class="col-lg-12" id="fsdd-names-and-taxonomy">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Names and Taxonomy
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="overview-name-taxonomy-table"
+                                         class="overview-name-taxonomy-table dashboard-table"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="row"
-                     style="margin: 0 !important; margin-top: 15px !important;">
-                    <div id="taxa-record-timeline-wrapper"
-                         class="chart-wrapper"
-                         style="border: 1px solid black; width: 95%; height: 200px">
-                        <canvas id="taxa-records-timeline-graph" width="150px"
-                                height="150px"></canvas>
+                <div class="col-lg-8 dashboard-graph-wrapper">
+                    <div class="row">
+                        {# Records Per Area #}
+                        <div class="col-lg-12" id="fsdd-records-per-area">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Occurrences
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="records-per-area-taxonomy-table dashboard-table"
+                                         style="margin-top: 10px; margin-bottom: 10px"></div>
+                                    <div class="dashboard-table records-area-table" id="records-area-table"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div style="width: 5%; ">
-                        <button class="btn btn-default btn-element-download pull-right download-taxa-records-timeline"
-                                style="float: left">
-                            <i class="fa fa-download"></i>
-                        </button>
+                    <div class="row">
+                        {# Records-per-area chart #}
+                        <div class="col-lg-12"
+                             id="fsdd-records-per-area-chart">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Occurrences
+                                    </div>
+                                    <button class="ssdd-export btn btn-default pull-right"
+                                            data-datac="taxa-records-timeline-graph">
+                                        <i class="fa fa-download"></i>
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="taxa-records-timeline-graph"></canvas>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="row dd-sub-title">CONSERVATION STATUS</div>
-                <div class="row dd-status-list conservation-status-list">
-                    <span class="dd-status-item"
-                          data-value="EX">Extinct (EX)</span>
-                    <span class="dd-status-item" data-value="EW">Extinct in the wild (EW)</span>
-                    <span class="dd-status-item" data-value="CR">Critically endangered (CR)</span>
-                    <span class="dd-status-item" data-value="EN">Endangered (EN)</span>
-                    <span class="dd-status-item" data-value="VU">Vulnerable (VU)</span>
-                    <span class="dd-status-item" data-value="NT">Near threatened (NT)</span>
-                    <span class="dd-status-item" data-value="LC">Least concern (LC)</span>
-                    <span class="dd-status-item" data-value="DD">Data deficient (DD)</span>
-                    <span class="dd-status-item" data-value="NE">Not evaluated (NE)</span>
-                </div>
-                <div class="row dd-sub-title">ORIGIN</div>
-                <div class="row dd-status-list origin-info-list">
-                    <span class="dd-status-item"
-                          data-value="indigenous">Native</span>
-                    <span class="dd-status-item"
-                          data-value="alien">Non-native</span>
-                    <span class="dd-status-item" data-value="translocated">Translocated</span>
-                </div>
-                <div class="row dd-sub-title">ENDEMISM</div>
-                <div class="row dd-status-list endemic-info-list">
-                    <span class="dd-status-item" data-value="widespread">Widespread</span>
-                    <span class="dd-status-item" data-value="regional endemic">Regional endemic</span>
-                    <span class="dd-status-item" data-value="micro-endemic">Micro-endemic</span>
+                    <div class="row">
+                        {# orgin #}
+                        <div class="col-md-12 col-lg-6" id="fsdd-orgin">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Origin
+                                    </div>
+                                    <button class="ssdd-export btn btn-default pull-right"
+                                            data-datac="origin-block-data">
+                                        <i class="fa fa-download"></i>
+                                    </button>
+                                </div>
+                                <div id="origin-block-data">
+                                </div>
+
+                            </div>
+                        </div>
+                        {# endemism #}
+                        <div class="col-md-12 col-lg-6" id="fsdd-endemism">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Endemism
+                                    </div>
+                                    <button class="ssdd-export btn btn-default pull-right"
+                                            data-datac="endemism-block-data">
+                                        <i class="fa fa-download"></i>
+                                    </button>
+                                </div>
+                                <div id="endemism-block-data">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        {# conservation-status #}
+                        <div class="col-lg-12" id="fsdd-conservation-status">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Conservation Status
+                                    </div>
+                                    <button class="ssdd-export btn btn-default pull-right"
+                                            data-datac="fsdd-conservation-status-card">
+                                        <i class="fa fa-download"></i>
+                                    </button>
+                                </div>
+                                <div id="fsdd-conservation-status-card">
+                                </div>
+                                <a id="fsdd-iucn-link"
+                                   target="_blank">
+                                    <div class="iucn-species-page-link">
+                                        IUCN species page
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        {# Images #}
+                        <div class="col-lg-12" id="fsdd-images">
+                            <div class="card">
+                                <div class="card-header">
+                                    <div class="card-header-title pull-left d-inline">
+                                        Images
+                                    </div>
+                                </div>
+                                <div class="card-body"
+                                     id="fsdd-images-card-body">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -85,167 +195,389 @@
 </script>
 
 <script type="text/template" id="taxon-overview-table">
-    <table class="table">
-        <tr>
-            <td>Taxon</td>
-            <td><%= taxon_class %></td>
-        </tr>
-        <tr>
-            <td>GBIF ID</td>
-            <td><%= gbif_id %></td>
-        </tr>
-        <tr>
-            <td>Records</td>
-            <td><%= count %> <a href='<%= csv_downloads_url %>'
-                                style="text-decoration: underline; font-size: 11pt !important;">Download
-                as CSV</a></td>
-        </tr>
-    </table>
+    <div class="row">
+        <div class="col-4 title_column">Taxon</div>
+        <div class="col-8"><%= taxon_class %></div>
+    </div>
+    <div class="row">
+        <div class="col-4 title_column">Common Name</div>
+        <div class="col-8"><%= common_name %></div>
+    </div>
+    <div class="row">
+        <div class="col-4 title_column">GBIF ID</div>
+        <div class="col-8"><%= gbif_id %></div>
+    </div>
+    <div class="row">
+        <div class="col-4 title_column">Records</div>
+        <div class="col-8"><%= count %></div>
+    </div>
+    <div class="row">
+        <div class="col-4 title_column">Sites</div>
+        <div class="col-8"><a href='<%= csv_downloads_url %>'
+                              style="text-decoration: underline; font-size: 11pt !important;">
+            Download as CSV</a>
+        </div>
+    </div>
 </script>
 
 <script type="text/template" id="taxon-detail-table">
-    <table class="taxon-dashboard-detail table">
-    </table>
+    <div class="container taxon-dashboard-detail table">
+        <div class="row">
+            <div class="col-4 title_column">Kingdom</div>
+            <div class="col-8"><%= kingdom %></div>
+        </div>
+        <div class="row">
+            <div class="col-4 title_column">Phylum</div>
+            <div class="col-8"><%= phylum %></div>
+        </div>
+        <div class="row">
+            <div class="col-4 title_column">Class</div>
+            <div class="col-8"><%= my_class %></div>
+        </div>
+        <div class="row">
+            <div class="col-4 title_column">Order</div>
+            <div class="col-8"><%= order %></div>
+        </div>
+        <div class="row">
+            <div class="col-4 title_column">Family</div>
+            <div class="col-8"><%= family %></div>
+        </div>
+        <div class="row">
+            <div class="col-4 title_column">Genus</div>
+            <div class="col-8"><%= genus %></div>
+        </div>
+        <div class="row">
+            <div class="col-4 title_column">Species</div>
+            <div class="col-8"><%= species %></div>
+        </div>
+    </div>
 </script>
 
 <script type="text/html" id="detailed-site-dashboard">
-    <div class="loading-dashboard">
-        <img src="/static/img/small-loading.svg" width="250"
-             alt="Loading view">
-        <div class="loading-dashboard-subtitle">
-            Loading...
+    <div id="detailed-site-dashboard-wrapper" style="padding: 1rem;">
+        <div class="loading-dashboard">
+            <img src="/static/img/small-loading.svg" width="250"
+                 alt="Loading view">
+            <div class="loading-dashboard-subtitle">
+                Loading...
+            </div>
         </div>
-    </div>
-    <button class="btn btn-primary btn-dashboard close-dashboard"
-            style="float: right"><i class="fa fa-times pull-right"></i>
-    </button>
-    <div class="container dashboard-wrapper">
-        <div style="height: 32px">
-        <div style="height: 32px">
-        </div>
-        <div class="container row">
+        <button class="btn btn-primary btn-dashboard close-dashboard"
+                style="float: right; z-index: 10;"><i
+                class="fa fa-times pull-right"></i>
+        </button>
+
+        <h2 class="dashboard-header">
+            Site Dashboard
+        </h2>
+        <div class="container dashboard-wrapper row">
             <div class="col-lg-4">
-                <div id="site-markers"></div>
-                <div class="card">
+                {# Filter History #}
+                <div class="card" id="filter-history-wrapper">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inline"
+                             style="height: 35px !important;">
+                            Filter History
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table id="filter-history-table"></table>
+                    </div>
+                </div>
+                {# Distribution #}
+                <div class="card" id="fish-ssdd-distribution">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inline">
+                            Distribution
+                        </div>
+                        <button
+                                id="export-locationsite-map"
+                                class="btn btn-default pull-right"
+                                data-datac="locationsite-map">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="locationsite-map"
+                             class="locationsite-map-wrapper"
+                             style="height: 300px; width: 100%;">
+                        </div>
+                    </div>
+                </div>
+                {# Overview #}
+                <div class="card" id="fish-ssdd-overview">
                     <div class="card-header">
                         <div class="card-header-title pull-left d-inline">
                             Overview
                         </div>
-                        <button id="export-locationsite-map"
-                                class="btn btn-default pull-right"><i
-                                class="fa fa-download"></i></button>
-                    </div>
-                    <div class="card-body locationsite-map-wrapper">
-                        <div id="locationsite-map" class="map"
-                             style="height: 300px; width: 100%;"></div>
-                        <div id="overview-dashboard-table"
-                             class="dashboard-table"
-                             style="margin-top: 10px; margin-bottom: 10px">
-                            <table class="table">
-                                <tr>
-                                    <td id="site-name-label">Name</td>
-                                    <td id="site-name"></td>
-                                </tr>
-                                <tr>
-                                    <td>Total Records</td>
-                                    <td id="total-records">0</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card" style="margin-top: 20px">
-                    <div class="card-header">
-                        <div class="pull-left d-inline">
-                            Occurence data
-                        </div>
-                        <button class="btn btn-info download-as-csv pull-right">
-                            Download as
-                            CSV
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="ssdd-overview-wrapper">
+                            <i class="fa fa-download"></i>
                         </button>
                     </div>
-                    <div class="card-body">
-                        <div class="dashboard-table">
-                            <table id="occurence-table" class="table">
-                                <tr>
-                                    <th>Taxon</th>
-                                    <th>Category</th>
-                                    <th>Records</th>
-                                </tr>
-                            </table>
+                    {# Overview Site details #}
+                    <div class="card-body" id="ssdd-overview-wrapper">
+                        <div id="fish-ssdd-site-details">
+                            <div class="col-12"
+                                 id="overview"></div>
+                            <div class="col-12 sub-title site-details-header">
+                                Catchments
+                            </div>
+                            <div class="col-12"
+                                 id="catchments"></div>
+                            <div class="col-12 sub-title"
+                                 class="site-details-header">
+                                Water Management Areas
+                            </div>
+                            <div class="col-12"
+                                 id="sub_water_management_areas"></div>
+                            <div class="col-12 sub-title"
+                                 class="site-details-header">
+                                SA Ecoregion
+                            </div>
+                            <div class="col-12"
+                                 id="sa-ecoregions"></div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-8" id="dashboard-graph-wrapper">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-inline card-header-title pull-left">
-                            Collections Chart
+                        <br/>
+                        <div id="fish-ssdd-records-sites">
+                            <div class="col-12 sub-title site-details-header">
+                                Records and Sites
+                            </div>
+                            <div class="col-12" id="records-sites">
+                            </div>
                         </div>
-                        <button class="btn btn-default pull-right download-origin-chart">
-                            <i class="fa fa-download"></i></button>
-                    </div>
-                    <div class="card-body">
-                        <div class="container-fluid no-padding">
-                            <div class="row detailed-table-chart">
-                                <div class="col-md-4 no-padding">
-                                    <canvas id="collection-category-graph"></canvas>
-                                    <div class="chart-label">Origin</div>
+                        <br/>
+                        <div class="occurrences-table-view">
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-6 sub-title site-details-header">
+                                        Origin
+                                    </div>
+                                    <div class="col-6 sub-title site-details-header">
+                                        Number of occurrence
+                                        records
+                                    </div>
+                                    <div class="col-12"
+                                         id="origins">
+                                    </div>
                                 </div>
-                                <div class="col-md-4 no-padding">
-                                    <canvas id="cons-status-graph"></canvas>
-                                    <div class="chart-label">Cons status</div>
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="occurrences-table-view">
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-6 sub-title site-details-header">
+                                        Endemism
+                                    </div>
+                                    <div class="col-6 sub-title site-details-header">
+                                        Number of occurrence
+                                        records
+                                    </div>
+                                    <div class="col-12"
+                                         id="ssdd-endemism">
+                                    </div>
                                 </div>
-                                <div class="col-md-4 no-padding">
-                                    <canvas id="sampling-method-graph"></canvas>
-                                    <div class="chart-label">Sampling method
+                            </div>
+                        </div>
+                        <br/>
+                        <div class="occurrences-table-view">
+                            <div class="col-12">
+                                <div class="row">
+                                    <div class="col-6 sub-title site-details-header">
+                                        Conservation Status
+                                    </div>
+                                    <div class="col-6 sub-title site-details-header">
+                                        Number of occurrence
+                                        records
+                                    </div>
+                                    <div class="col-12"
+                                         id="ssdd-conservation-status">
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                {# Occurence Data #}
+                <div class="card" id="fish-ssdd-occurrence-data">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inline">
+                            Occurrence Data
+                        </div>
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="occurrence-data">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="occurrence-data">
+                        </div>
+                        <div class="container">
+                            <button class="btn btn-info download-as-csv"
+                                    style="width: 100%;">Download as CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-                <div class="row"
-                     style="margin: 0 !important; margin-top: 15px !important;">
-                    <div class="card full-width">
-                        <div class="card-header">
-                            <div class="d-inline card-header-title pull-left">
-                                Records Timeline Graph
-                            </div>
-                            <button class="btn btn-default pull-right download-record-timeline">
-                                <i class="fa fa-download"></i></button>
+                <div class="sass-dashboard-button-container container" style="padding: 10px; text-align: center">
+                    <a href="#" class="btn btn-info" id="sass-dashboard-button" style="display:none; font-size: 10pt;">Open SASS Dashboard</a>
+                </div>
+
+            </div>
+            {# end of col-lg-4 #}
+
+            <div class="col-lg-8">
+                {# Data Summary #}
+                <div class="card" id="fish-ssdd-data-summary">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inline">
+                            Occurrence Charts
                         </div>
-                        <div class="card-body">
-                            <div id="record-timeline-wrapper"
-                                 class="chart-wrapper">
-                                <canvas id="records-timeline-graph"
-                                        height="200px"></canvas>
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="data-summary">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="data-summary">
+                            <div class="row fish-ssdd-legends">
+                                <div class="col-3 fish-ssdd-legend"
+                                     id="fish-ssdd-origin-legend"></div>
+                                <div class="col-3 fish-ssdd-legend"
+                                     id="fish-ssdd-endemism-legend"></div>
+                                <div class="col-3 fish-ssdd-legend"
+                                     id="fish-ssdd-cons_status-legend"></div>
+                                <div class="col-3 fish-ssdd-legend"
+                                     id="fish-ssdd-sampling_method-legend"></div>
+                            </div>
+                            <div class="row">
+                                <div class="col-3">
+                                    <canvas id="fish-ssdd-origin-pie"></canvas>
+                                </div>
+                                <div class="col-3">
+                                    <canvas id="fish-ssdd-endemism-pie"></canvas>
+                                </div>
+                                <div class="col-3">
+                                    <canvas id="fish-ssdd-conservation-status-pie"></canvas>
+                                </div>
+                                <div class="col-3">
+                                    <canvas id="fish-ssdd-sampling-method-pie"></canvas>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-3 fish-ssdd-titles">
+                                    Origin
+                                </div>
+                                <div class="col-3 fish-ssdd-titles">
+                                    Endemism
+                                </div>
+                                <div class="col-3 fish-ssdd-titles">
+                                    Conservation Status
+                                </div>
+                                <div class="col-3 fish-ssdd-titles">
+                                    Sampling Method
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="row"
-                     style="margin: 0 !important; margin-top: 15px !important; margin-bottom: 20px !important;">
-                    <div class="card full-width">
-                        <div class="card-header">
-                            <div class="d-inline card-header-title pull-left">
-                                Collection Timeline Graph
-                            </div>
-                            <button class="btn btn-default pull-right download-collection-timeline">
-                                <i class="fa fa-download"></i></button>
+
+                {# Occurrences per year line chart #}
+                <div class="card" id="fish-ssdd-occurrences-line-chart">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inline">
+                            Occurrences
                         </div>
-                        <div class="card-body">
-                            <div id="collection-timeline-wrapper"
-                                 class="chart-wrapper">
-                                <canvas id="collection-timeline-graph"
-                                        height="200px"></canvas>
-                            </div>
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="fish-ssdd-occurrences-line-chart-canvas">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-12 fish-ssdd-occurrences-line-chart">
+                            <canvas id="fish-ssdd-occurrences-line-chart-canvas"></canvas>
                         </div>
                     </div>
                 </div>
+
+                {# Occurrences per year line chart #}
+                <div class="card" id="fish-ssdd-taxa-occurrences-bar-chart">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inline">
+                            Taxa
+                        </div>
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="fish-ssdd-taxa-occurrences-line-chart-canvas">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-12 fish-ssdd-taxa-line-chart">
+                            <div class="chart-loading">Fetching...</div>
+                            <canvas id="fish-ssdd-taxa-occurrences-line-chart-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                {# origin per year bar chart #}
+                <div class="card" id="fish-ssdd-origin-bar-chart">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inbar">
+                            Origin
+                        </div>
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="fish-ssdd-origin-bar-chart-canvas">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-12 fish-ssdd-origin-bar-chart">
+                            <div class="chart-loading">Fetching...</div>
+                            <canvas id="fish-ssdd-origin-bar-chart-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                {# cons-status per year bar chart #}
+                <div class="card" id="fish-ssdd-cons-status-bar-chart">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inbar">
+                            Conservation Status
+                        </div>
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="fish-ssdd-cons-status-bar-chart-canvas">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-12 fish-ssdd-cons-status-bar-chart">
+                            <div class="chart-loading">Fetching...</div>
+                            <canvas id="fish-ssdd-cons-status-bar-chart-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                {# endemism per year bar chart #}
+                <div class="card" id="fish-ssdd-endemism-bar-chart">
+                    <div class="card-header">
+                        <div class="card-header-title pull-left d-inbar">
+                            Endemism
+                        </div>
+                        <button class="ssdd-export btn btn-default pull-right"
+                                data-datac="fish-ssdd-endemism-bar-chart">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="col-12 fish-ssdd-endemism-bar-chart">
+                            <div class="chart-loading">Fetching...</div>
+                            <canvas id="fish-ssdd-endemism-bar-chart-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

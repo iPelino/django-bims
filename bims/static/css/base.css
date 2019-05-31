@@ -163,3 +163,104 @@ h6 {
   color: #526B43 !important;
   border-color: #526B43 !important;
 }
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                                   supported by Chrome and Opera */
+}
+
+.fbis-button {
+    background-color: #18A090;
+    border-radius: 3px;
+    margin: 0.25rem;
+    font-weight: normal;
+    color: white;
+}
+
+.fbis-button:hover {
+  background-color: #6BC0B5;
+  color: white;
+}
+
+.fbis-button:active {
+  background-color: #17766B;
+  box-shadow: inset 1px 1px 6px rgba(0,0,0, 0.2);
+  color: white;
+}
+
+.fbis-button-small {
+    background-color: #18A090;
+    border-radius: 2.5px;
+    padding: 0.4rem;
+    font-weight: normal;
+    color: white;
+    border-color: white;
+    border-style: solid;
+    height: 100%;
+    border-width: 1px;
+    text-align: center;
+    border-right: 0;
+    border-bottom: 0;
+}
+
+.fbis-button-small:hover {
+    background-color: #6BC0B5;
+    color: white;
+    cursor: pointer;
+}
+
+.fbis-button-small:active {
+    background-color: #17766B;
+    box-shadow: inset 1px 1px 6px rgba(0,0,0, 0.2);
+    color: white;
+}
+
+.fbis-button-small.disabled {
+    background-color: #a0a0a0 !important;
+}
+
+.fbis-button-small.disabled:active {
+    background-color: #a0a0a0 !important;
+    box-shadow: inset 0 0 0 rgba(0,0,0, 0) !important;
+}
+
+.fbis-button-small.disabled:hover {
+    background-color: #a0a0a0 !important;
+    cursor: default;
+}
+
+.fbis-button-small span {
+    align-items: center;
+    height: 100%;
+    display: inline-flex;
+}
+
+.fbis-center-text {
+    align-items: center;
+    height: 100%;
+    display: inline-flex;
+}
+
+.fbis-red {
+    background-color: #8d2641 !important;
+}
+
+.fbis-red:hover {
+    background-color: #B77282 !important;
+}
+
+.fbis-red:active {
+    background-color: #641F30 !important;
+}
+
+.btn-normal {
+    font-size: 10pt;
+    padding-left: 30px !important;
+    padding-right: 30px !important;
+    text-transform: capitalize;
+}

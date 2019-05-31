@@ -1,0 +1,66 @@
+{% extends 'main_base.html' %}
+{% load static from staticfiles %}
+{% load jsonify %}
+{% load proper_paginate %}
+{% load url_replace %}
+
+{% block subtitle %}
+    SASS List
+{% endblock %}
+
+{% block head %}
+
+    <!-- Custom styles for this template -->
+    <link href="{% static "css/form_page.css" %}" rel="stylesheet">
+    <script type="text/javascript">
+    </script>
+
+{% endblock %}
+
+{% block body_content %}
+    <div class="body-form container">
+        <table class="table table-sm">
+            <thead>
+            <tr>
+                <th scope="col" width="700">Location Site</th>
+                <th scope="col">Date Time</th>
+                <th scope="col">SASS Version</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for sheet in site_visits %}
+                <tr>
+                    <td scope="row"
+                        class="sheet-row">
+                        {{ sheet.location_site.name }}
+                    </td>
+                    <td class="sheet-row">
+                        {{ sheet.site_visit_date }}
+                    </td>
+                    <td class="sheet-row">
+                        {% if sheet.sass_version %}
+                            {{ sheet.sass_version }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="sheet-row">
+                        <a href="/sass/update/{{ sheet.id }}" class="btn btn-sm btn-info">Update</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        {% include 'paginator_template.html' %}
+    </div>
+{% endblock %}
+
+{% block foot %}
+
+    <!-- Plugin JavaScript -->
+    <script src="{% static "js/libs/jquery/jquery-3.3.1.min.js" %}"></script>
+    <script src="{% static "js/libs/bootstrap-4.0.0/js/bootstrap.min.js" %}"></script>
+
+{% endblock %}

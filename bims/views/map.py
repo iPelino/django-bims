@@ -37,15 +37,22 @@ class MapPageView(TemplateView):
         context = super(MapPageView, self).get_context_data(**kwargs)
         context['bing_map_key'] = get_key('BING_MAP_KEY')
         context['map_tiler_key'] = get_key('MAP_TILER_KEY')
+        context['map_surfer_key'] = get_key('MAP_SURFER_KEY')
         context['geocontext_url'] = get_key('GEOCONTEXT_URL')
         context['geocontext_collection_key'] = get_key(
             'GEOCONTEXT_COLLECTION_KEY')
         context['center_point_map'] = get_key('CENTER_POINT_MAP')
         context['can_validate'] = user_has_permission_to_validate(
                 self.request.user)
+        context['geoserver_public_location'] = get_key(
+            'GEOSERVER_PUBLIC_LOCATION')
 
         categories = BiologicalCollectionRecord.CATEGORY_CHOICES
         context['collection_category'] = [list(x) for x in categories]
+        # add base module
+        context['biological_modules'] = {
+            'base': 'base'
+        }
 
         # Additional filters
         context['use_ecological_condition'] = bool(
@@ -56,12 +63,12 @@ class MapPageView(TemplateView):
         # Search panel titles
         date_title = get_key('DATE_TITLE')
         if not date_title:
-            date_title = 'DATE'
+            date_title = 'TEMPORAL SCALE'
         context['date_title'] = date_title
 
         spatial_scale = get_key('SPATIAL_SCALE_TITLE')
         if not spatial_scale:
-            spatial_scale = 'ADMINISTRATIVE AREA'
+            spatial_scale = 'SPATIAL SCALE'
         context['spatial_scale_title'] = spatial_scale
 
         # get date filter

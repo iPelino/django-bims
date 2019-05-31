@@ -17,36 +17,55 @@ define(['backbone', 'ol', 'shared', 'underscore', 'jquery', 'chartJs', 'fileSave
         events: {
             'click .close-dashboard': 'closeDashboard',
             'click #export-taxasite-map': 'exportTaxasiteMap',
-            'click .download-taxa-records-timeline': 'downloadTaxaRecordsTimeline'
+            'click .download-taxa-records-timeline': 'downloadTaxaRecordsTimeline',
+            'click .ssdd-export': 'downloadElementEvent'
         },
         apiParameters: _.template(Shared.SearchURLParametersTemplate),
+
         initialize: function () {
             this.$el.hide();
         },
         render: function () {
+            this.gbifId = null;
             this.$el.html(this.template());
             this.loadingDashboard = this.$el.find('.loading-dashboard');
             this.dashboardTitleContainer = this.$el.find('.detailed-dashboard-title');
             this.originInfoList = this.$el.find('.origin-info-list');
             this.endemicInfoList = this.$el.find('.endemic-info-list');
-            this.conservationStatusList = this.$el.find('.conservation-status-list');
+            this.conservationStatusList = this.$el.find('#fsdd-conservation-status-card');
             this.overviewTaxaTable = this.$el.find('.overview-taxa-table');
             this.overviewNameTaxonTable = this.$el.find('.overview-name-taxonomy-table');
             this.taxaRecordsTimelineGraph = this.$el.find('#taxa-records-timeline-graph');
+            this.endemismBlockData = this.$el.find('#endemism-block-data');
             this.taxaRecordsTimelineGraphChart = null;
             this.taxaRecordsTimelineGraphCanvas = this.taxaRecordsTimelineGraph[0].getContext('2d');
+            this.originBlockData = this.$el.find('#origin-block-data');
             this.recordsTable = this.$el.find('.records-table');
             this.recordsAreaTable = this.$el.find('.records-area-table');
-            this.siteGeoPoints = {};
             this.mapTaxaSite = null;
-            this.taxaVectorLayer = null;
-            this.taxaVectorSource = null;
             this.csvDownloadsUrl = '/download-csv-taxa-records/';
+            this.imagesCard = this.$el.find('#fsdd-images-card-body');
+            this.iucnLink = this.$el.find('#fsdd-iucn-link');
+
+            let biodiversityLayersOptions = {
+                url: geoserverPublicUrl + 'wms',
+                params: {
+                    LAYERS: locationSiteGeoserverLayer,
+                    FORMAT: 'image/png8',
+                    viewparams: 'where:' + emptyWMSSiteParameter
+                },
+                ratio: 1,
+                serverType: 'geoserver'
+            };
+            this.siteLayerSource = new ol.source.ImageWMS(biodiversityLayersOptions);
+            this.siteTileLayer = new ol.layer.Image({
+                source: this.siteLayerSource
+            });
             return this;
         },
         show: function (data) {
             var self = this;
-            if(this.isOpen) {
+            if (this.isOpen) {
                 return false;
             }
             this.isOpen = true;
@@ -54,8 +73,8 @@ define(['backbone', 'ol', 'shared', 'underscore', 'jquery', 'chartJs', 'fileSave
 
             this.$el.show('slide', {
                 direction: 'right'
-            }, 300, function(){
-                self.url = '/api/get-bio-records/';
+            }, 300, function () {
+                self.url = '/api/bio-collection-summary/';
                 if (typeof data === 'string') {
                     self.url += '?' + data;
                     self.csvDownloadsUrl += '?' + data;
@@ -87,171 +106,120 @@ define(['backbone', 'ol', 'shared', 'underscore', 'jquery', 'chartJs', 'fileSave
                 }
             })
         },
-        generateTaxonDetailDashboard: function (taxonomy_id) {
-            var self = this;
-            $.get({
-                url: '/api/taxon/' + taxonomy_id,
-                dataType: 'json',
-                success: function (data) {
-                    var taxonomySystem = self.$el.find('.taxon-dashboard-detail');
-                    if (data.hasOwnProperty('kingdom')) {
-                        taxonomySystem.append(
-                            '<tr>' +
-                            '<td>Kingdom</td>' +
-                            '<td>' + data['kingdom'] + '</td>' +
-                            '</tr>'
-                        )
-                    }
-                    if (data.hasOwnProperty('phylum')) {
-                        taxonomySystem.append(
-                            '<tr>' +
-                            '<td>Phylum</td>' +
-                            '<td>' + data['phylum'] + '</td>' +
-                            '</tr>'
-                        )
-                    }
-                    if (data.hasOwnProperty('class')) {
-                        taxonomySystem.append(
-                            '<tr>' +
-                            '<td>Class</td>' +
-                            '<td>' + data['class'] + '</td>' +
-                            '</tr>'
-                        )
-                    }
-                    if (data.hasOwnProperty('order')) {
-                        taxonomySystem.append(
-                            '<tr>' +
-                            '<td>Order</td>' +
-                            '<td>' + data['order'] + '</td>' +
-                            '</tr>'
-                        )
-                    }
-                    if (data.hasOwnProperty('family')) {
-                        taxonomySystem.append(
-                            '<tr>' +
-                            '<td>Family</td>' +
-                            '<td>' + data['family'] + '</td>' +
-                            '</tr>'
-                        )
-                    }
-                    if (data.hasOwnProperty('genus')) {
-                        taxonomySystem.append(
-                            '<tr>' +
-                            '<td>genus</td>' +
-                            '<td>' + data['genus'] + '</td>' +
-                            '</tr>'
-                        )
-                    }
-                    if (data.hasOwnProperty('species')) {
-                        taxonomySystem.append(
-                            '<tr>' +
-                            '<td>Species</td>' +
-                            '<td>' + data['species'] + '</td>' +
-                            '</tr>'
-                        )
-                    }
-
-                }
-            })
+        displayTaxonomyRank: function (taxonomy_rank) {
+            let taxononomyRankList = _.template($('#taxon-detail-table').html());
+            this.overviewNameTaxonTable.html(taxononomyRankList({
+                kingdom: taxonomy_rank['KINGDOM'],
+                phylum: taxonomy_rank['PHYLUM'],
+                my_class: taxonomy_rank['CLASS'],
+                order: taxonomy_rank['ORDER'],
+                family: taxonomy_rank['FAMILY'],
+                genus: taxonomy_rank['GENUS'],
+                species: taxonomy_rank['SPECIES'],
+            }));
         },
         generateDashboard: function (data) {
             var self = this;
-            this.dashboardTitleContainer.html(this.taxonName);
-            var gbif_key = data[0]['taxonomy']['gbif_key'];
-            var taxonomy_id = data[0]['taxonomy']['id'];
-            var canonicalName = data[0]['taxonomy']['canonical_name'];
-
+            this.dashboardTitleContainer.html(data['taxon']);
+            if (data['common_name'] !== '') {
+                this.dashboardTitleContainer.append('<div class="common-name-title">' + data['common_name'] + '</div>');
+            }
+            var gbif_key = data['gbif_id'];
+            var taxonomy_id = data['process_id'];
+            var canonicalName = data['taxon'];
+            var common_name = data['common_name'];
+            var iucn_redlist_id = data['iucn_id'];
             self.taxonName = canonicalName;
 
-            // Set origin
-            var category = data[0]['category'];
-            $.each(self.originInfoList.children(), function (key, data) {
-                var $originInfoItem = $(data);
-                if ($originInfoItem.data('value') === category) {
-                    $originInfoItem.css('background-color', 'rgba(5, 255, 103, 0.28)');
-                }
-            });
+            this.iucnLink.attr('href', `https://apiv3.iucnredlist.org/api/v3/taxonredirect/${iucn_redlist_id}/`);
 
-            // Set endemic
-            var endemic = data[0]['endemism'];
-            $.each(this.endemicInfoList.children(), function (key, data) {
-                var $endemicInfoItem = $(data);
-                if (!endemic) {
-                    return true;
-                }
-                if ($endemicInfoItem.data('value') === endemic.toLowerCase()) {
-                    $endemicInfoItem.css('background-color', 'rgba(5, 255, 103, 0.28)');
-                }
-            });
+            var origin_block_data = {};
+            origin_block_data['keys'] = ['Native', 'Non-native', 'Translocated'];
+            origin_block_data['value'] = this.origin_title_from_choices(data['origin'], data);
+            // for (let i = 0; i < origin_block_data['keys'].length; i++) {
+            //     let next_key = origin_block_data['keys'][i];
+            //     origin_block_data['keys'][i] = this.origin_title_from_choices(next_key, data);
+            // };
+            origin_block_data['value_title'] = origin_block_data['value'];
+            this.originBlockData.append(self.renderFBISRPanelBlocks(origin_block_data));
 
-            // Set con status
-            var conservation = data[0]['taxonomy']['iucn_status_name'];
-            $.each(this.conservationStatusList.children(), function (key, data) {
-                var $conservationStatusItem = $(data);
-                if ($conservationStatusItem.data('value') === conservation) {
-                    $conservationStatusItem.css('background-color', 'rgba(5, 255, 103, 0.28)');
-                }
-            });
+            var endemism_block_data = {};
+            endemism_block_data['value'] = data['endemism'];
+            ;
+            endemism_block_data['keys'] = Shared.EndemismList;
+            endemism_block_data['value_title'] = data['endemism'];
+            this.endemismBlockData.append(self.renderFBISRPanelBlocks(endemism_block_data));
+
+            //Set conservation status
+            var cons_status_block_data = {};
+            cons_status_block_data['value'] = this.iucn_title_from_choices(data['conservation_status'], data);
+            cons_status_block_data['keys'] = ['NE', 'DD', 'LC', 'NT', 'VU', 'EN', 'CR', 'EW', 'EX'];
+            for (let i = 0; i < cons_status_block_data['keys'].length; i++) {
+                let next_key = cons_status_block_data['keys'][i];
+                cons_status_block_data['keys'][i] = this.iucn_title_from_choices(next_key, data);
+            }
+            ;
+            cons_status_block_data['value_title'] = cons_status_block_data['value'];
+            this.conservationStatusList.append(self.renderFBISRPanelBlocks(cons_status_block_data));
 
             var overViewTable = _.template($('#taxon-overview-table').html());
             this.overviewTaxaTable.html(overViewTable({
                 csv_downloads_url: self.csvDownloadsUrl,
-                count: data.length,
-                taxon_class: data[0]['taxonomy']['scientific_name'],
-                gbif_id: gbif_key
+                count: data['total_records'],
+                taxon_class: data['taxon'],
+                gbif_id: gbif_key,
+                common_name: data['common_name']
             }));
 
-            var taxonDetailTable = _.template($('#taxon-detail-table').html());
-
-            this.overviewNameTaxonTable.html(taxonDetailTable(data[0]['taxonomy']));
-
-            var objectPerDate = self.countObjectPerDateCollection(data);
-            var dataBySite = self.countObjectPerSite(data);
+            let recordsOverTimeData = data['records_over_time_data'];
+            let recordsOverTimeLabels = data['records_over_time_labels'];
             var recordsOptions = {
                 maintainAspectRatio: false,
-                title: {display: true, text: 'Records'},
+                title: {display: false, text: 'Records'},
                 legend: {display: false},
                 scales: {
                     xAxes: [{
                         barPercentage: 0.4,
-                        ticks: {autoSkip: false, maxRotation: 90, minRotation: 90},
-                        scaleLabel: {display: true, labelString: 'Year'}
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 90,
+                            minRotation: 90
+                        },
+                        scaleLabel: {display: false, labelString: 'Year'}
                     }],
                     yAxes: [{
                         stacked: true,
-                        scaleLabel: {display: true, labelString: 'Occurrence'}
+                        scaleLabel: {display: true, labelString: 'Occurrence'},
+                        ticks: {
+                            beginAtZero: true,
+                            callback: function (value) {
+                                if (value % 1 === 0) {
+                                    return value;
+                                }
+                            },
+                        },
                     }]
                 }
             };
 
-            var objectDatasets= [{
-                data: Object.values(objectPerDate[self.objectDataByYear]),
+
+            var objectDatasets = [{
+                data: recordsOverTimeData,
                 backgroundColor: 'rgba(222, 210, 65, 1)'
             }];
 
             this.taxaRecordsTimelineGraphChart = self.createTimelineGraph(
                 self.taxaRecordsTimelineGraphCanvas,
-                objectPerDate[self.yearsArray],
+                recordsOverTimeLabels,
                 objectDatasets,
                 recordsOptions);
+            this.displayTaxonomyRank(data['taxonomy_rank']);
 
-            var $table = $('<table class="table"></table>');
-            for(var key in objectPerDate[self.objectDataByYear]){
-                $table.append('<tr><td>' + key + '</td><td>' + objectPerDate[self.objectDataByYear][key] + '</td></tr>')
-            }
-            self.recordsTable.html($table);
-
-            var $tableArea = $('<table class="table"></table>');
-            $tableArea.append('<tr><th>ID</th><th>Site name</th><th>Records</th></tr>')
-            for(var site in dataBySite){
-                if(dataBySite[site]['site_name'] !== undefined) {
-                    $tableArea.append('<tr><td>' + site + '</td><td data-site-id="' + site + '">' + dataBySite[site]['site_name'] + '</td><td>' + dataBySite[site]['count'] + '</td></tr>')
-                }else {
-                    $tableArea.append('<tr><td>' + site + '</td><td data-site-id="'+site+'">' + site + '</td><td>' + dataBySite[site]['count'] + '</td></tr>')
-                }
-            }
             if (!this.mapTaxaSite) {
                 this.mapTaxaSite = new ol.Map({
+                    controls: ol.control.defaults().extend([
+                        new ol.control.ScaleLine()
+                    ]),
                     layers: [
                         new ol.layer.Tile({
                             source: new ol.source.OSM()
@@ -260,92 +228,121 @@ define(['backbone', 'ol', 'shared', 'underscore', 'jquery', 'chartJs', 'fileSave
                     target: 'taxasite-map',
                     view: new ol.View({
                         center: [0, 0],
-                        zoom: 12
+                        zoom: 2
                     })
                 });
+                var graticule = new ol.Graticule({
+                    strokeStyle: new ol.style.Stroke({
+                        color: 'rgba(0,0,0,1)',
+                        width: 1,
+                        lineDash: [2.5, 4]
+                    }),
+                    showLabels: true
+                });
+                graticule.setMap(this.mapTaxaSite);
+                this.mapTaxaSite.addLayer(this.siteTileLayer);
             }
+
+            let newParams = {
+                layers: locationSiteGeoserverLayer,
+                format: 'image/png',
+                viewparams: 'where:"' + data['sites_raw_query'] + '"'
+            };
+            this.siteLayerSource.updateParams(newParams);
+
+            // Zoom to extent
+            let ext = ol.proj.transformExtent(data['extent'], ol.proj.get('EPSG:4326'), ol.proj.get('EPSG:3857'));
+            this.mapTaxaSite.getView().fit(ext, this.mapTaxaSite.getSize());
+            if (this.mapTaxaSite.getView().getZoom() > 8) {
+                this.mapTaxaSite.getView().setZoom(8);
+            }
+
+            var $tableArea = $('<div class="container"></div>');
+            $tableArea.append(`
+                    <div class="row">
+                    <div class="col-4 title_column">Site code</div>
+                    <div class="col-4 title_column">River Name</div>
+                    <div class="col-4 title_column">Occurrences</div>
+                    </div>`);
+            $.each(data['records_per_area'], function (index, areaRecord) {
+                let site_code = areaRecord['site_code'];
+                let count = areaRecord['count'];
+                let river_name = areaRecord['river'];
+                if (river_name === null) {
+                    river_name = '-';
+                }
+                $tableArea.append(`
+                    <div class="row">
+                    <div class="col-4">${site_code}</div>
+                    <div class="col-4">${river_name}</div>
+                    <div class="col-4">${count}</div>
+                    </div>`)
+            });
             self.recordsAreaTable.html($tableArea);
-
-            $.each(data, function (index, value) {
-                var sites = Object.keys(self.siteGeoPoints);
-                if(!sites.includes(value['site'])) {
-                    var center = JSON.parse(value['location']);
-                    self.siteGeoPoints[value['site']] = center['coordinates'];
-                    self.addFeatures(self.siteGeoPoints);
-                }
-            });
-
-            this.generateTaxonDetailDashboard(taxonomy_id);
+            var thirdPartyData = this.renderThirdPartyData(data);
+            this.imagesCard.append(thirdPartyData);
         },
-        countObjectPerDateCollection: function(data) {
-            var yearArray = [];
-            var dataByYear = {};
-            $.each(data, function (key, value) {
-                var collection_year = new Date(value['collection_date']).getFullYear();
-                if($.inArray(collection_year, yearArray) === -1){
-                    yearArray.push(collection_year)
-                }
-            });
-            yearArray.sort();
-
-            $.each(yearArray, function (idx, year) {
-                dataByYear[year] = 0;
-                $.each(data, function (key, value) {
-                    var valueYear = new Date(value['collection_date']).getFullYear();
-                    if(valueYear === year){
-                        dataByYear[year] += 1;
-                    }
-                })
-            });
-
-            var self = this;
-            var results = {};
-            results[self.objectDataByYear] = dataByYear;
-            results[self.yearsArray] = yearArray;
-
-            return results;
+        downloadElementEvent: function (button_el) {
+            let button = $(button_el.target);
+            if (!button.hasClass('btn')) {
+                button = button.parent();
+            }
+            let target = button.data('datac');
+            let element = this.$el.find('#' + target);
+            let random_number = Math.random() * 1000000;
+            let this_title = `FWBD-Dashboard-Export-{${random_number}}`;
+            if (element.length > 0)
+                this.downloadElement(this_title, element);
         },
-        countObjectPerSite: function(data) {
-            var dataBySite = {};
-            $.each(data, function (key, value) {
-                if (!dataBySite.hasOwnProperty(value['site'])) {
-                    dataBySite[value['site']] = {
-                        'count': 1,
-                        'site_name': value['site_name']
-                    }
-                } else {
-                    dataBySite[value['site']]['count'] += 1;
+        downloadElement: function (title, element) {
+            element[0].scrollIntoView();
+            html2canvas(element, {
+                onrendered: function (canvas) {
+                    var link = document.createElement('a');
+                    link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+                    link.download = title + '.png';
+                    link.click();
                 }
-            });
-            return dataBySite
+            })
         },
         clearDashboard: function () {
-            $.each(this.originInfoList.children(), function (key, data) {
-                var $originInfoItem = $(data);
-                $originInfoItem.css('background-color', '');
-            });
             $.each(this.conservationStatusList.children(), function (key, data) {
                 var $conservationStatusItem = $(data);
                 $conservationStatusItem.css('background-color', '');
             });
+            $.each(this.originInfoList.children(), function (key, data) {
+                var $originInfoItem = $(data);
+                $originInfoItem.css('background-color', '');
+            });
+
+            this.conservationStatusList.html('');
+
             $.each(this.endemicInfoList.children(), function (key, data) {
                 var $endemicInfoItem = $(data);
                 $endemicInfoItem.css('background-color', '');
             });
             this.overviewTaxaTable.html('');
             this.overviewNameTaxonTable.html('');
-
+            this.endemismBlockData.html('');
+            this.imagesCard.html('');
+            this.originBlockData.html('');
             // Clear canvas
-            if(this.taxaRecordsTimelineGraphChart) {
+            if (this.taxaRecordsTimelineGraphChart) {
                 this.taxaRecordsTimelineGraphChart.destroy();
                 this.taxaRecordsTimelineGraphChart = null;
             }
 
+
+            if (this.mapTaxaSite) {
+                let newParams = {
+                    layers: locationSiteGeoserverLayer,
+                    format: 'image/png',
+                    viewparams: 'where:' + emptyWMSSiteParameter
+                };
+                this.siteLayerSource.updateParams(newParams);
+            }
             this.recordsTable.html('');
             this.recordsAreaTable.html('');
-            this.siteGeoPoints = {};
-
-            this.taxaVectorSource.clear();
         },
         closeDashboard: function () {
             var self = this;
@@ -362,7 +359,7 @@ define(['backbone', 'ol', 'shared', 'underscore', 'jquery', 'chartJs', 'fileSave
                 Shared.Router.clearSearch();
             });
         },
-        createTimelineGraph: function(canvas, labels, dataset, options) {
+        createTimelineGraph: function (canvas, labels, dataset, options) {
             var chart = new ChartJs(canvas, {
                 type: 'bar',
                 data: {
@@ -371,70 +368,166 @@ define(['backbone', 'ol', 'shared', 'underscore', 'jquery', 'chartJs', 'fileSave
                 },
                 options: options
             });
+
+
             return chart;
-        },
-        addFeatures: function(data) {
-            if(this.taxaVectorLayer){
-                this.mapTaxaSite.removeLayer(this.taxaVectorLayer);
-                this.taxaVectorLayer = null;
-            }
-
-            var iconFeatures=[];
-
-            $.each(data, function (index, value) {
-                var center = ol.proj.transform([value[0], value[1]], 'EPSG:4326', 'EPSG:3857');
-                var iconFeature = new ol.Feature({
-                    geometry: new ol.geom.Point(center)
-                });
-
-                var iconStyle = new ol.style.Style({
-                    image: new ol.style.Icon(({
-                        anchor: [0.5, 46],
-                        anchorXUnits: 'fraction',
-                        anchorYUnits: 'pixels',
-                        opacity: 0.75,
-                        src: '/static/img/map-marker.png'
-                    }))
-                });
-                iconFeature.setStyle(iconStyle);
-                iconFeatures.push(iconFeature);
-            });
-
-            this.taxaVectorSource = new ol.source.Vector({
-                features: iconFeatures
-            });
-
-            this.taxaVectorLayer = new ol.layer.Vector({
-                source: this.taxaVectorSource
-            });
-            this.mapTaxaSite.addLayer(this.taxaVectorLayer);
-            this.mapTaxaSite.getView().fit(this.taxaVectorLayer.getSource().getExtent(), this.mapTaxaSite.getSize());
         },
         exportTaxasiteMap: function () {
             this.mapTaxaSite.once('postcompose', function (event) {
-                var canvas = event.context.canvas;
-                if (navigator.msSaveBlob) {
-                    navigator.msSaveBlob(canvas.msToBlob(), 'map.png');
-                } else {
-                    canvas.toBlob(function (blob) {
-                        saveAs(blob, 'map.png')
-                    })
-                }
+                let canvas = $('#taxasite-map');
+                html2canvas(canvas, {
+                    useCORS: false,
+                    background: '#FFFFFF',
+                    allowTaint: true,
+                    onrendered: function (canvas) {
+                        $('.ol-control').show();
+                        let link = document.createElement('a');
+                        link.setAttribute("type", "hidden");
+                        link.href = canvas.toDataURL("image/png");
+                        link.download = 'map.png';
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                    }
+                });
             });
             this.mapTaxaSite.renderSync();
         },
         downloadTaxaRecordsTimeline: function () {
             var title = 'taxa-record-timeline';
-            var canvas = this.taxaRecordsTimelineGraph;
+            var canvas = this.taxaRecordsTimelineGraph[0];
+            this.downloadChart(title, canvas);
+        },
+        downloadChart: function (title, graph_canvas) {
+            var img = new Image();
+            var ctx = graph_canvas.getContext('2d');
+            img.src = '/static/img/bims-stamp.png';
+            img.onload = function () {
+                ctx.drawImage(img, graph_canvas.scrollWidth - img.width - 5,
+                    graph_canvas.scrollHeight - img.height - 5);
+                canvas = graph_canvas;
+                html2canvas(canvas, {
+                    onrendered: function (canvas) {
+                        var link = document.createElement('a');
+                        link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
+                        link.download = title + '.png';
+                        link.click();
+                    }
+                })
+            }
+        },
+        renderThirdPartyData: function (data) {
 
-            html2canvas(canvas, {
-                onrendered: function (canvas) {
-                    var link = document.createElement('a');
-                    link.href = canvas.toDataURL("image/png").replace("image/png", "image/octet-stream");
-                    link.download = title + '.png';
-                    link.click();
+            var $thirdPartyData = $('<div>');
+
+            var template = _.template($('#third-party-template').html());
+            $thirdPartyData.append(template({}));
+
+            var $wrapper = $thirdPartyData.find('.third-party-wrapper');
+            var mediaFound = false;
+            var $fetchingInfoDiv = $thirdPartyData.find('.third-party-fetching-info');
+            var this_GBIF_ID = data['gbif_id'];
+            $.get({
+                url: 'https://api.gbif.org/v1/occurrence/search?taxonKey=' + this_GBIF_ID + '&limit=4',
+                dataType: 'json',
+                success: function (data) {
+                    var results = data['results'];
+
+                    var $rowWrapper = $('<div id="gbif-images-row" class="gbif-images-row row gbif-images-row-fsdd"></div>');
+
+                    var result = {};
+                    for (let result_id in results) {
+                        var $firstColumnDiv = $('<div class="col-6" "></div>');
+                        result = results[result_id];
+                        if (!result.hasOwnProperty('media')) {
+                            continue;
+                        }
+                        if (result['media'].length === 0) {
+                            continue;
+                        }
+                        var media = result['media'][0];
+                        if (!media.hasOwnProperty('identifier')) {
+                            continue;
+                        }
+                        mediaFound = true;
+                        if (mediaFound) {
+                            $fetchingInfoDiv.hide();
+                        }
+                        $firstColumnDiv.append('<a target="_blank" href="' + media['references'] + '">' +
+                            '<img title="Source: ' + media['publisher'] + '" alt="' + media['rightsHolder'] + '" src="' + media['identifier'] + '" width="100%"/></a>');
+                        $rowWrapper.append($firstColumnDiv);
+                    }
+                    $wrapper.append($rowWrapper);
+                    if (!mediaFound) {
+                        $fetchingInfoDiv.html('Media not found');
+                    }
                 }
-            })
-        }
+            });
+
+            return $thirdPartyData;
+        },
+        renderFBISRPanelBlocks: function (data, stretch_selection = false) {
+            var $detailWrapper = $('<div style="padding-left: 0;"></div>');
+            $detailWrapper.append(this.getHtmlForFBISBlocks(data, stretch_selection));
+            return $detailWrapper;
+        },
+        getHtmlForFBISBlocks: function (new_data_in, stretch_selection) {
+            var result_html = '<div class ="fbis-data-flex-block-row">'
+            var data_in = new_data_in;
+            var data_value = data_in.value;
+            var data_title = data_in.value_title;
+            var keys = data_in.keys;
+            var key = '';
+            var style_class = '';
+            var for_count = 0;
+            for (let key of keys) {
+                for_count += 1;
+                style_class = "fbis-rpanel-block fbis-rpanel-block-dd ";
+                var temp_key = key;
+                //Highlight my selected box with a different colour
+                if (key == data_value) {
+                    style_class += " fbis-rpanel-block-selected";
+                    temp_key = data_title;
+                    if (stretch_selection == true) {
+                        style_class += " flex-base-auto";
+                    }
+                }
+                result_html += (`<div class="${style_class}">
+                                 <div class="fbis-rpanel-block-text">
+                                 ${temp_key}</div></div>`)
+
+            }
+            ;
+            result_html += '</div>';
+            return result_html;
+        },
+        origin_title_from_choices: function (short_name, data) {
+            var name = short_name;
+            var choices = [];
+            choices = this.flatten_arr(data['origin_choices_list']);
+            if (choices.length > 0) {
+                let index = choices.indexOf(short_name) + 1;
+                let long_name = choices[index];
+                name = long_name;
+            }
+            return name;
+        },
+        iucn_title_from_choices: function (short_name, data) {
+            var name = short_name;
+            var choices = [];
+            choices = this.flatten_arr(data['iucn_choice_list']);
+            if (choices.length > 0) {
+                let index = choices.indexOf(short_name) + 1;
+                let long_name = choices[index];
+                name = `${long_name} (${short_name})`;
+            }
+            return name;
+        },
+        flatten_arr: function (arr) {
+            self = this;
+            return arr.reduce(function (flat, toFlatten) {
+                return flat.concat(Array.isArray(toFlatten) ? self.flatten_arr(toFlatten) : toFlatten);
+            }, []);
+        },
     })
 });

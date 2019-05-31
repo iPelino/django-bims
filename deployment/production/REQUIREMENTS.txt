@@ -45,10 +45,6 @@ django-contact-us==0.4.1
 Pillow==5.1.0
 django-ordered-model==1.4.3
 
-# Django haystack support
-git+https://github.com/dimasciput/django-haystack.git
-elasticsearch==5.0.1
-
 # prometheus monitoring support
 django-prometheus==1.0.14
 prometheus_client==0.2.0
@@ -61,3 +57,6 @@ django-crispy-forms==1.7.2
 djangorestframework-gis==0.13
 pandas==0.23.4
 git+https://github.com/dimasciput/pandas_access.git
+selenium==3.12.0
+matplotlib==2.2.4
+django-admin-rangefilter==0.4.0

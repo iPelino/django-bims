@@ -17,6 +17,12 @@ class SassTaxon(AbstractAdditionalData):
         null=True
     )
 
+    taxon_sass_5 = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True
+    )
+
     score = models.IntegerField(
         null=True,
         blank=True
@@ -44,3 +50,7 @@ class SassTaxon(AbstractAdditionalData):
 
     def __unicode__(self):
         return self.taxon.scientific_name
+
+    class Meta:
+        verbose_name_plural = "SASS taxa"
+        verbose_name = "SASS taxon"

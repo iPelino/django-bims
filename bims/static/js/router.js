@@ -11,7 +11,32 @@ define(['backbone', 'views/olmap', 'utils/events_connector', 'shared'], function
             "site-detail/:query": "showSiteDetailedDashboard",
             "species-detail/:query": "showSpeciesDetailedDashboard"
         },
+        initializeParameters: function () {
+            this.parameters['taxon'] = '';
+            this.parameters['months'] = '';
+            this.parameters['siteId'] = '';
+            this.parameters['search'] = '';
+            this.parameters['collector'] = '';
+            this.parameters['category'] = '';
+            this.parameters['yearFrom'] = '';
+            this.parameters['yearTo'] = '';
+            this.parameters['userBoundary'] = '';
+            this.parameters['referenceCategory'] = '';
+            this.parameters['boundary'] = '';
+            this.parameters['reference'] = '';
+            this.parameters['endemic'] = '';
+            this.parameters['conservationStatus'] = '';
+            this.parameters['spatialFilter'] = '';
+            this.parameters['taxon'] = '';
+            this.parameters['validated'] = '';
+            this.parameters['modules'] = '';
+            this.parameters['sourceCollection'] = '';
+            if (typeof filterParameters !== 'undefined') {
+                filterParameters = $.extend(true, {}, this.parameters);
+            }
+        },
         initialize: function () {
+            this.initializeParameters();
             this.map = new olmap();
             this.eventsConnector = new EventsConnector();
         },

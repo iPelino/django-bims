@@ -21,7 +21,7 @@ define([
         parameters: {
             taxon: '', zoom: 0, bbox: [], siteId: '',
             collector: '', category: '', yearFrom: '', yearTo: '', months: '',
-            boundary: '', userBoundary: '', referenceCategory: '', reference: '', endemic: '',  riverCatchment: '',
+            boundary: '', userBoundary: '', referenceCategory: '', reference: '', endemic: '',  spatialFilter: '',
             clusterSize: Shared.ClusterSize, conservationStatus: ''
         },
         initialize: function (parent) {
@@ -46,7 +46,7 @@ define([
             this.parameters['reference'] = '';
             this.parameters['endemic'] = '';
             this.parameters['conservationStatus'] = '';
-            this.parameters['riverCatchment'] = '';
+            this.parameters['spatialFilter'] = '';
             Shared.Dispatcher.trigger('cluster:updated', this.parameters);
             if (typeof filterParameters !== 'undefined') {
                 filterParameters = $.extend(true, {}, this.parameters);
@@ -65,7 +65,6 @@ define([
             });
         },
         clearClusters: function () {
-            this.clearParameters();
             this.resetClusters();
             this.toggleTaxonIndicator();
         },
@@ -145,7 +144,7 @@ define([
                 && !this.parameters['reference']
                 && !this.parameters['endemic']
                 && !this.parameters['conservationStatus']
-                && !this.parameters['riverCatchment']
+                && !this.parameters['spatialFilter']
                 && !this.parameters['boundary']) {
                 return false
             } else {
@@ -235,26 +234,6 @@ define([
             if (this.isActive()) {
                 this.resetClusters();
                 this.fetchXhr = this.fetchCluster(zoomToExtent);
-            } else {
-                Shared.Dispatcher.trigger('map:zoomToExtent', self.initExtent);
-            }
-        },
-        getExtentOfRecords: function () {
-            Shared.Dispatcher.trigger('cluster:updated', this.parameters);
-            var self = this;
-            if (this.isActive()) {
-                var extentUrl = '/api/collection/extent/' + this.apiParameters(this.parameters);
-                $.ajax({
-                    url: extentUrl,
-                    dataType: "json",
-                    success: function (data) {
-                        if (data.length === 4) {
-                            Shared.Dispatcher.trigger('map:zoomToExtent', data);
-                        } else {
-                            Shared.Dispatcher.trigger('map:zoomToExtent', self.initExtent);
-                        }
-                    }
-                });
             } else {
                 Shared.Dispatcher.trigger('map:zoomToExtent', self.initExtent);
             }

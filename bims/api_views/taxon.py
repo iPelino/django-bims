@@ -71,10 +71,13 @@ class TaxonDetail(APIView):
 
     def get(self, request, pk, format=None):
         taxon = self.get_object(pk)
+
+
         serializer = TaxonSerializer(taxon)
         data = serializer.data
 
         records = BiologicalCollectionRecord.objects.filter(
+            validated=True,
             taxonomy=taxon
         )
 
@@ -92,10 +95,22 @@ class TaxonDetail(APIView):
         data['origin'] = origin_value
 
         data['count'] = records.count()
+        data['total_sites'] = records.distinct('site').count()
 
         # Taxonomic rank tree
         taxonomic_rank = self.get_taxonomic_rank_values(taxon)
         for rank in taxonomic_rank:
             data.update(rank)
+        common_names = []
+        # Common name
+        if taxon.vernacular_names.filter(language='eng').exists():
+            common_names = list(
+                taxon.vernacular_names.all().filter(language='eng').values())
+        elif taxon.vernacular_names.all().values().exists():
+            common_names = list(taxon.vernacular_names.all().values())
+        if len(common_names) == 0:
+            data['common_name'] = 'Unknown'
+        else:
+            data['common_name'] = str(common_names[0]['name']).capitalize()
 
         return Response(data)
